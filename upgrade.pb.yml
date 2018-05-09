@@ -1,0 +1,56 @@
+---
+- name: Install/Upgrade Junos
+  hosts: all
+  serial: 1
+  roles:
+    - Juniper.junos
+  connection: local
+  gather_facts: no
+  vars:
+    wait_time: 3600
+    local_pkg_dir: ../Downloads/
+    remote_pkg_dir: /tmp/
+    leaf_OS_version: 15.1X53-D233.1
+    leaf_OS_package: jinstall-host-qfx-5e-15.1X53-D233.1-secure-domestic-signed.tgz
+    leaf_OS_md5: 1ce5c3be823e116b82f28988fea96e60
+    spine_OS_version: 15.1X53-D63.9
+    spine_OS_package: jinstall-host-qfx-10-f-15.1X53-D63.9-domestic-signed.tgz
+    spine_OS_md5: 21b30b1dde2d333fcfce9c194c7d995f
+    log_dir: ./
+
+  tasks:
+    - name: Junos get facts for device
+      juniper_junos_facts:
+        host: '{{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}'
+      register: facts
+
+    - name: Set OS package for device type
+      set_fact:
+       OS_version: "{% if facts['ansible_facts']['junos']['model']|search('QFX5200')%}{{ leaf_OS_version }}{% else%}{{ spine_OS_version }}{% endif %}" 
+       OS_package: "{% if facts['ansible_facts']['junos']['model']|search('QFX5200')%}{{ leaf_OS_package }}{% else%}{{ spine_OS_package }}{% endif %}" 
+       OS_md5: "{% if facts['ansible_facts']['junos']['model']|search('QFX5200')%}{{ leaf_OS_md5 }}{% else%}{{ spine_OS_md5 }}{% endif %}" 
+
+    - name: Checking NETCONF connectivity
+      wait_for: host={{ ansible_host }} port=830 timeout=5
+
+    - name: Install Junos OS package
+      juniper_junos_software:
+        host: '{{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}'
+        reboot: yes
+        reboot_pause: 65
+        validate: no
+        version: "{{ OS_version }}"
+        local_package: "{{ local_pkg_dir }}/{{ OS_package }}"
+        remote_package: "{{ remote_pkg_dir }}/{{ OS_package }}"
+        checksum: "{{ OS_md5 }}"
+        logdir: "{{ log_dir }}"
+      register: sw
+      notify:
+        - wait_reboot
+    - debug:
+        var: sw
+
+  handlers:
+    - name: wait_reboot
+      wait_for: host={{ ansible_host }} port=830 timeout={{ wait_time }}
+      when: not sw.check_mode
