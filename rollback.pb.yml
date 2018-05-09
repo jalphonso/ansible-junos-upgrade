@@ -1,0 +1,51 @@
+---
+- name: Rollback Junos software to previous version
+  hosts: all
+  serial: 1
+  roles:
+    - Juniper.junos
+  connection: local
+  gather_facts: no
+  vars:
+    netconf_port: 830
+    wait_time: 3600
+    log_dir: ./
+
+  tasks:
+    - name: request system software rollback
+      juniper_junos_rpc:
+        host: '{{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}'
+        rpc: request-package-rollback
+        port: "{{ netconf_port }}"
+        timeout: 60
+        logdir: "./"
+      register: juniper_junos_rpc_result
+
+    - debug:
+        var: juniper_junos_rpc_result['parsed_output']
+
+    - name: request system reboot
+      juniper_junos_system:
+        host: '{{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}'
+        action: "reboot"
+        port: "{{ netconf_port }}"
+        timeout: 60
+        logdir: "{{ log_dir }}"
+      register: result
+      notify:
+        - pause_for_reboot
+        - wait_reboot
+    - debug:
+        var: result
+
+  handlers:
+    - name: pause_for_reboot
+      pause:
+        seconds: 120
+      when: result.reboot
+    - name: wait_reboot
+      wait_for:
+        host: "{{ ansible_host }}"
+        port: "{{ netconf_port }}"
+        timeout: "{{ wait_time }}"
+      when: result.reboot

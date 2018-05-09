@@ -8,6 +8,7 @@
   gather_facts: no
   vars:
     wait_time: 3600
+    netconf_port: 830
     local_pkg_dir: ../Downloads/
     remote_pkg_dir: /tmp/
     leaf_OS_version: 15.1X53-D233.1
@@ -31,7 +32,10 @@
        OS_md5: "{% if facts['ansible_facts']['junos']['model']|search('QFX5200')%}{{ leaf_OS_md5 }}{% else%}{{ spine_OS_md5 }}{% endif %}" 
 
     - name: Checking NETCONF connectivity
-      wait_for: host={{ ansible_host }} port=830 timeout=5
+      wait_for:
+        host: "{{ ansible_host }}"
+        port: "{{ netconf_port }}"
+        timeout: 5
 
     - name: Install Junos OS package
       juniper_junos_software:
@@ -52,5 +56,8 @@
 
   handlers:
     - name: wait_reboot
-      wait_for: host={{ ansible_host }} port=830 timeout={{ wait_time }}
+      wait_for:
+        host: "{{ ansible_host }}"
+        port: "{{ netconf_port }}"
+        timeout: "{{ wait_time }}"
       when: not sw.check_mode
