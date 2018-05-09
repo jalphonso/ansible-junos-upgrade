@@ -33,12 +33,16 @@
         logdir: "{{ log_dir }}"
       register: result
       notify:
+        - update_user
         - pause_for_reboot
         - wait_reboot
     - debug:
         var: result
 
   handlers:
+    - name: update_user
+      debug:
+        msg: "Junos software successfully rolled back for device {{ inventory_hostname }}. Rebooted and waiting for device to come back online..."
     - name: pause_for_reboot
       pause:
         seconds: 120

@@ -14,9 +14,9 @@
     leaf_OS_version: 15.1X53-D233.1
     leaf_OS_package: jinstall-host-qfx-5e-15.1X53-D233.1-secure-domestic-signed.tgz
     leaf_OS_md5: 1ce5c3be823e116b82f28988fea96e60
-    spine_OS_version: 15.1X53-D63.9
-    spine_OS_package: jinstall-host-qfx-10-f-15.1X53-D63.9-domestic-signed.tgz
-    spine_OS_md5: 21b30b1dde2d333fcfce9c194c7d995f
+    spine_OS_version: 15.1X53-D65.3
+    spine_OS_package: jinstall-host-qfx-10-f-15.1X53-D65.3-domestic-signed.tgz
+    spine_OS_md5: 7b43e76f8bde2e11f54b1fbe798110e7
     log_dir: ./
 
   tasks:
@@ -37,6 +37,10 @@
         port: "{{ netconf_port }}"
         timeout: 5
 
+    - name: Software to be installed
+      debug:
+        msg: "Installing Junos software version {{ OS_version }} to device {{ inventory_hostname }}"
+
     - name: Install Junos OS package
       juniper_junos_software:
         host: '{{ (ansible_ssh_host|default(ansible_host))|default(inventory_hostname) }}'
@@ -50,11 +54,16 @@
         logdir: "{{ log_dir }}"
       register: sw
       notify:
+        - update_user
         - wait_reboot
     - debug:
         var: sw
 
   handlers:
+    - name: update_user
+      debug:
+        msg: "Junos software version {{ OS_version }} upgrade for device {{ inventory_hostname }} is now complete. Rebooted and waiting for device to come back online..."
+
     - name: wait_reboot
       wait_for:
         host: "{{ ansible_host }}"
