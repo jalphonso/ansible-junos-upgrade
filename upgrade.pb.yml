@@ -30,27 +30,27 @@
 
     - name: Set OS package for device type
       set_fact:
-       OS_version: "{% if facts['ansible_facts']['junos']['model']|search('QFX5100')%}
+       OS_version: "{%- if facts['ansible_facts']['junos']['model']|search('QFX5100')-%}
                          {{ qfx5100_OS_version }}
-                    {% elif facts['ansible_facts']['junos']['model']|search('QFX5200')%}
+                    {%- elif facts['ansible_facts']['junos']['model']|search('QFX5200')-%}
                          {{ qfx5200_OS_version }}
-                    {% elif facts['ansible_facts']['junos']['model']|search('QFX10002')%}
+                    {%- elif facts['ansible_facts']['junos']['model']|search('QFX10002')-%}
                          {{ qfx10002_OS_version }}
                     {% endif %}" 
-       OS_package: "{% if facts['ansible_facts']['junos']['model']|search('QFX5100')%}
+       OS_package: "{%- if facts['ansible_facts']['junos']['model']|search('QFX5100')-%}
                          {{ qfx5100_OS_package }}
-                    {% elif facts['ansible_facts']['junos']['model']|search('QFX5200')%}
+                    {%- elif facts['ansible_facts']['junos']['model']|search('QFX5200')-%}
                          {{ qfx5200_OS_package }}
-                    {% elif facts['ansible_facts']['junos']['model']|search('QFX10002')%}
+                    {%- elif facts['ansible_facts']['junos']['model']|search('QFX10002')-%}
                          {{ qfx10002_OS_package }}
-                    {% endif %}" 
-       OS_md5: "{% if facts['ansible_facts']['junos']['model']|search('QFX5100')%}
+                    {%- endif -%}" 
+       OS_md5:     "{%- if facts['ansible_facts']['junos']['model']|search('QFX5100')-%}
                          {{ qfx5100_OS_md5 }}
-                    {% elif facts['ansible_facts']['junos']['model']|search('QFX5200')%}
+                    {%- elif facts['ansible_facts']['junos']['model']|search('QFX5200')-%}
                          {{ qfx5200_OS_md5 }}
-                    {% elif facts['ansible_facts']['junos']['model']|search('QFX10002')%}
+                    {%- elif facts['ansible_facts']['junos']['model']|search('QFX10002')-%}
                          {{ qfx10002_OS_md5 }}
-                    {% endif %}" 
+                    {%- endif -%}" 
 
     - name: Checking NETCONF connectivity
       wait_for:
