@@ -9,18 +9,18 @@
   vars:
     wait_time: 3600
     netconf_port: 830
-    local_pkg_dir: ../Downloads/
-    remote_pkg_dir: /tmp/
-    qfx5100_OS_version: 14.1X53-D46.7
-    qfx5100_OS_package: jinstall-qfx-5-14.1X53-D46.7-domestic-signed.tgz
-    qfx5100_OS_md5: 743e4c731bf38e07c45f021e89d73652
-    qfx5200_OS_version: 15.1X53-D233.1
-    qfx5200_OS_package: jinstall-host-qfx-5e-15.1X53-D233.1-secure-domestic-signed.tgz
-    qfx5200_OS_md5: 1ce5c3be823e116b82f28988fea96e60
-    qfx10002_OS_version: 15.1X53-D65.3
-    qfx10002_OS_package: jinstall-host-qfx-10-f-15.1X53-D65.3-domestic-signed.tgz
-    qfx10002_OS_md5: 7b43e76f8bde2e11f54b1fbe798110e7
-    log_dir: ./
+    local_pkg_dir: "../Downloads/"
+    remote_pkg_dir: "/tmp/"
+    qfx5100_OS_version: "14.1X53-D46.7"
+    qfx5100_OS_package: "jinstall-qfx-5-14.1X53-D46.7-domestic-signed.tgz"
+    qfx5100_OS_md5: "743e4c731bf38e07c45f021e89d73652"
+    qfx5200_OS_version: "15.1X53-D233.1"
+    qfx5200_OS_package: "jinstall-host-qfx-5e-15.1X53-D233.1-secure-domestic-signed.tgz"
+    qfx5200_OS_md5: "1ce5c3be823e116b82f28988fea96e60"
+    qfx10002_OS_version: "15.1X53-D65.3"
+    qfx10002_OS_package: "jinstall-host-qfx-10-f-15.1X53-D65.3-domestic-signed.tgz"
+    qfx10002_OS_md5: "7b43e76f8bde2e11f54b1fbe798110e7"
+    log_dir: "./"
 
   tasks:
     - name: Junos get facts for device
@@ -36,7 +36,7 @@
                          {{ qfx5200_OS_version }}
                     {%- elif facts['ansible_facts']['junos']['model']|search('QFX10002')-%}
                          {{ qfx10002_OS_version }}
-                    {% endif %}" 
+                    {%- endif -%}" 
        OS_package: "{%- if facts['ansible_facts']['junos']['model']|search('QFX5100')-%}
                          {{ qfx5100_OS_package }}
                     {%- elif facts['ansible_facts']['junos']['model']|search('QFX5200')-%}
@@ -51,16 +51,29 @@
                     {%- elif facts['ansible_facts']['junos']['model']|search('QFX10002')-%}
                          {{ qfx10002_OS_md5 }}
                     {%- endif -%}" 
+       remote_pkg_dir: "{%- if facts['ansible_facts']['junos']['model']|search('QFX5100')-%}
+                             /var/tmp/
+                        {%- else-%}
+                             {{ remote_pkg_dir }}
+                        {%- endif -%}" 
+       current_OS_version: "{{ facts['ansible_facts']['junos']['version'] }}"
+
+    - name: Print current software version
+      debug:
+        msg: "Current software version for device {{ inventory_hostname }} is {{ current_OS_version }}"
 
     - name: Checking NETCONF connectivity
       wait_for:
         host: "{{ ansible_host }}"
         port: "{{ netconf_port }}"
         timeout: 5
+      when: current_OS_version != OS_version
 
     - name: Software to be installed
       debug:
         msg: "Installing Junos software version {{ OS_version }} to device {{ inventory_hostname }}"
+      when: current_OS_version != OS_version
+
 
     - name: Install Junos OS package
       juniper_junos_software:
@@ -73,12 +86,14 @@
         remote_package: "{{ remote_pkg_dir }}/{{ OS_package }}"
         checksum: "{{ OS_md5 }}"
         logdir: "{{ log_dir }}"
+      when: current_OS_version != OS_version
       register: sw
       notify:
         - update_user
         - wait_reboot
     - debug:
         var: sw
+      when: current_OS_version != OS_version
 
   handlers:
     - name: update_user
