@@ -9,7 +9,7 @@
   vars:
     netconf_port: 830
     wait_time: 3600
-    log_dir: ./
+    log_dir: "./"
 
   tasks:
     - name: request system software rollback
@@ -18,7 +18,7 @@
         rpc: request-package-rollback
         port: "{{ netconf_port }}"
         timeout: 60
-        logdir: "./"
+        logdir: "{{ log_dir }}"
       register: juniper_junos_rpc_result
 
     - debug:
